@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>duckiebot-fifos-bridge</name>
+  <name>duckiebot_fifos_bridge</name>
   <version>1.0.0</version>
-  <description>The duckiebot-fifos-bridge meta package</description>
+  <description>The duckiebot_fifos_bridge meta package</description>
 
   <license>GPLv3</license>
   <maintainer email="liam@duckietown.org">Liam Paull</maintainer>
