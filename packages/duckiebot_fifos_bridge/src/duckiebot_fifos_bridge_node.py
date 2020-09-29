@@ -59,7 +59,7 @@ class DuckiebotBridge(object):
                         time.sleep(0.01)
                 continue
 
-            np_arr = np.fromstring(self.client.image, np.uint8)
+            np_arr = np.frombuffer(self.client.image, np.uint8)
             data = np_arr.tostring()
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
