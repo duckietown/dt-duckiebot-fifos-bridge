@@ -9,7 +9,7 @@ logger = logging.getLogger('ROSClient')
 logger.setLevel(logging.DEBUG)
 
 
-class ROSClient(object):
+class ROSClient:
     def __init__(self):
         # Get the vehicle name, which comes in as HOSTNAME
         # TODO not sure about this
@@ -29,12 +29,12 @@ class ROSClient(object):
         msg = 'ROSClient initialized.'
         logger.info(msg)
 
-        self.cmd_pub = rospy.Publisher('/{}/wheels_driver_node/wheels_cmd'.format(
-            self.vehicle), WheelsCmdStamped, queue_size=10)
-        logger.info('publisher created')
+        topic = f'/{self.vehicle}/wheels_driver_node/wheels_cmd'
 
-        self.cam_sub = rospy.Subscriber('/{}/camera_node/image/compressed'.format(
-            self.vehicle), CompressedImage, self._cam_cb)
+        self.cmd_pub = rospy.Publisher(topic, WheelsCmdStamped, queue_size=10)
+        logger.info('publisher created')
+        topic = f'/{self.vehicle}/camera_node/image/compressed'
+        self.cam_sub = rospy.Subscriber(topic, CompressedImage, self._cam_cb)
 
         logger.info('subscriber created')
 
