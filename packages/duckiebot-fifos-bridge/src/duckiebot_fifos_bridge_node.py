@@ -9,7 +9,7 @@ import time
 import numpy as np
 
 from duckiebot_fifos_bridge.rosclient import ROSClient
-from zuper_nodes_python2 import ComponentInterface
+from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
 
 logger = logging.getLogger('DuckiebotBridge')
 logger.setLevel(logging.DEBUG)
