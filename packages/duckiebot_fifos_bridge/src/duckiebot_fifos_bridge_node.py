@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 
 import logging
+import os
 import signal
 import sys
 import time
-import cv2
-import os
 
+import cv2
 import numpy as np
+from aido_schemas import (DB18RobotObservations, Duckiebot1Observations, GetCommands, JPGImage,
+                          protocol_agent_duckiebot1)
+from zuper_nodes_wrapper.struct import MsgReceived
+from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
 
 from duckiebot_fifos_bridge.rosclient import ROSClient
-from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
-from aido_schemas import (protocol_agent_duckiebot1, GetCommands, GetRobotObservations, RobotObservations, JPGImage, Duckiebot1Observations, DB18RobotObservations)
 
 logger = logging.getLogger('DuckiebotBridge')
 logger.setLevel(logging.DEBUG)
 
 
-class DuckiebotBridge(object):
+class DuckiebotBridge:
     def __init__(self):
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
@@ -63,9 +65,9 @@ class DuckiebotBridge(object):
             np_arr = np.fromstring(self.client.image, np.uint8)
             jpg_data = rgb2jpg(np_arr)
             camera = JPGImage(jpg_data)
-            obs =  Duckiebot1Observations(camera)
+            obs = Duckiebot1Observations(camera)
             # TODO fix time for t_effective
-            ro = DB18RobotObservations(os.getenv('HOSTNAME'), time.time(), np_arr)
+            ro = DB18RobotObservations(os.getenv('HOSTNAME'), time.time(), obs)
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
 
@@ -84,7 +86,7 @@ class DuckiebotBridge(object):
             nimages_received += 1
             t_last_received = time.time()
 
-# noinspection PyUnresolvedReferences
+
 def rgb2jpg(rgb: np.ndarray) -> bytes:
     bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
     compress = cv2.imencode('.jpg', bgr)[1]
