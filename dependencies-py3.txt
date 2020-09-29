@@ -1,3 +1,2 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
-zuper-nodes-z6
-cbor2==4.1.2
+aido-protocols-daffy

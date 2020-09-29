@@ -10,6 +10,7 @@ import numpy as np
 
 from duckiebot_fifos_bridge.rosclient import ROSClient
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
+from aido_schemas import protocol_agent_duckiebot1
 
 logger = logging.getLogger('DuckiebotBridge')
 logger.setLevel(logging.DEBUG)
@@ -23,7 +24,10 @@ class DuckiebotBridge(object):
         AIDONODE_DATA_IN = '/fifos/agent-in'
         AIDONODE_DATA_OUT = '/fifos/agent-out'
         logger.info('DuckiebotBridge starting communicating with the agent.')
-        self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT, 'agent', timeout=30)
+        self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT,
+                                     expect_protocol=protocol_agent_duckiebot1,
+                                     nickname='agent',
+                                     timeout=30)
         self.ci.write_topic_and_expect_zero('seed', 32)
         self.ci.write_topic_and_expect_zero('episode_start', {'episode_name': 'episode'})
         logger.info('DuckiebotBridge successfully sent to the agent the seed and episode name.')
