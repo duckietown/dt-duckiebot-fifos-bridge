@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(duckiebot-fifos-bridge)
+project(duckiebot_fifos_bridge)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp

@@ -1,7 +1,7 @@
 # parameters
 ARG REPO_NAME="dt-duckiebot-fifos-bridge"
-ARG DESCRIPTION="Bridges the ROS on the duckiebot with the fifos interface"
-ARG MAINTAINER="Liam "
+ARG DESCRIPTION="Bridges the ROS environment on the duckiebot with the FIFOS"
+ARG MAINTAINER="Liam Paull (liam@duckietown.org)"
 # pick an icon from: https://fontawesome.com/v4.7.0/icons/
 ARG ICON="cube"
 
@@ -49,10 +49,6 @@ ENV DT_LAUNCHER "${LAUNCHER}"
 # install apt dependencies
 COPY ./dependencies-apt.txt "${REPO_PATH}/"
 RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
-
-# install python dependencies
-COPY ./dependencies-py.txt "${REPO_PATH}/"
-RUN pip install -r ${REPO_PATH}/dependencies-py.txt
 
 # install python3 dependencies
 COPY ./dependencies-py3.txt "${REPO_PATH}/"

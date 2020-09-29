@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import logging
 import signal
@@ -24,8 +24,8 @@ class DuckiebotBridge(object):
         AIDONODE_DATA_OUT = '/fifos/agent-out'
         logger.info('DuckiebotBridge starting communicating with the agent.')
         self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT, 'agent', timeout=30)
-        self.ci.write_topic_and_expect_zero(u'seed', 32)
-        self.ci.write_topic_and_expect_zero(u'episode_start', {u'episode_name': u'episode'})
+        self.ci.write_topic_and_expect_zero('seed', 32)
+        self.ci.write_topic_and_expect_zero('episode_start', {'episode_name': 'episode'})
         logger.info('DuckiebotBridge successfully sent to the agent the seed and episode name.')
         self.client = ROSClient()
         logger.info('DuckiebotBridge has created ROSClient.')
@@ -60,10 +60,10 @@ class DuckiebotBridge(object):
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
 
-            obs = {u'camera': {u'jpg_data': data}}
-            self.ci.write_topic_and_expect_zero(u'observations', obs)
-            commands = self.ci.write_topic_and_expect(u'get_commands', expect=u'commands')
-            commands = commands.data[u'wheels']
+            obs = {'camera': {'jpg_data': data}}
+            self.ci.write_topic_and_expect_zero('observations', obs)
+            commands = self.ci.write_topic_and_expect('get_commands', expect='commands')
+            commands = commands.data['wheels']
 
             self.client.send_commands(commands)
             if nimages_received == 0:
