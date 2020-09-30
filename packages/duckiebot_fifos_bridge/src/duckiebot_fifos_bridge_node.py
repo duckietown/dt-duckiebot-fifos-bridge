@@ -62,7 +62,8 @@ class DuckiebotBridge:
                         time.sleep(0.01)
                 continue
 
-            np_arr = np.fromstring(self.client.image, np.uint8)
+            np_arr = np.frombuffer(self.client.image, np.uint8)
+            np_arr = np.reshape(np_arr, (480,640,3))
             jpg_data = rgb2jpg(np_arr)
             camera = JPGImage(jpg_data)
             obs = Duckiebot1Observations(camera)

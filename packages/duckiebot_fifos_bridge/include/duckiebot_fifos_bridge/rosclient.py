@@ -50,9 +50,7 @@ class ROSClient:
         Callback to listen to last outputted camera image and store it
         """
         self.image = msg.data
-
         self.initialized = True
-
         if self.nreceived_images == 0:
             msg = 'ROSClient received first camera image.'
             logger.info(msg)
