@@ -63,8 +63,8 @@ class DuckiebotBridge:
                 continue
 
             np_arr = np.frombuffer(self.client.image, np.uint8)
-            np_arr = np.reshape(np_arr, (480,640,3))
-            jpg_data = rgb2jpg(np_arr)
+            image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            jpg_data = rgb2jpg(image_np)
             camera = JPGImage(jpg_data)
             obs = Duckiebot1Observations(camera)
             # TODO fix time for t_effective
