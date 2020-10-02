@@ -61,8 +61,7 @@ class DuckiebotBridge:
                         time.sleep(0.01)
                 continue
 
-            bgr_img = self.client.decode_image()
-            jpg_data = bgr2jpg(bgr_img)
+            jpg_data = self.client.image_data
             camera = JPGImage(jpg_data)
             obs = Duckiebot1Observations(camera)
             if nimages_received == 0:

@@ -27,7 +27,7 @@ class ROSClient:
         rospy.init_node('ROSClient')
         rospy.on_shutdown(self.on_shutdown)
 
-        self.r = rospy.Rate(15)
+        self.r = rospy.Rate(100)
         msg = 'ROSClient initialized.'
         logger.info(msg)
 
@@ -54,21 +54,12 @@ class ROSClient:
         Callback to listen to last outputted camera image and store it
         """
         self.image_msg = msg
+        self.image_data = msg.data
         self.initialized = True
         if self.nreceived_images == 0:
             msg = 'ROSClient received first camera image.'
             logger.info(msg)
         self.nreceived_images += 1
-
-    def decode_image(self):
-        # Decode from compressed image with OpenCV
-        try:
-            # decode to rgb
-            decoded_image = self.bridge.compressed_imgmsg_to_cv2(self.image_msg)
-        except ValueError as e:
-            self.logerr('Could not decode image: %s' % e)
-            return
-        return decoded_image
 
     def send_commands(self, cmds):
         """
