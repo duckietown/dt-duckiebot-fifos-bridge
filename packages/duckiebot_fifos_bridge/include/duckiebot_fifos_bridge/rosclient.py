@@ -1,5 +1,7 @@
 import logging
 import os
+import cv2
+from cv_bridge import CvBridge
 
 import rospy
 from duckietown_msgs.msg import WheelsCmdStamped
@@ -36,6 +38,8 @@ class ROSClient:
         topic = f'/{self.vehicle}/camera_node/image/compressed'
         self.cam_sub = rospy.Subscriber(topic, CompressedImage, self._cam_cb)
 
+        self.bridge = CvBridge()
+
         logger.info('subscriber created')
 
     def on_shutdown(self):
@@ -49,12 +53,22 @@ class ROSClient:
         """
         Callback to listen to last outputted camera image and store it
         """
-        self.image = msg.data
+        self.image_msg = msg
         self.initialized = True
         if self.nreceived_images == 0:
             msg = 'ROSClient received first camera image.'
             logger.info(msg)
         self.nreceived_images += 1
+
+    def decode_image(self):
+        # Decode from compressed image with OpenCV
+        try:
+            # decode to rgb
+            decoded_image = self.bridge.compressed_imgmsg_to_cv2(self.image_msg)
+        except ValueError as e:
+            self.logerr('Could not decode image: %s' % e)
+            return
+        return decoded_image
 
     def send_commands(self, cmds):
         """

@@ -5,10 +5,9 @@ import os
 import signal
 import sys
 import time
-
-import cv2
 import numpy as np
-from aido_schemas import (DB18RobotObservations, Duckiebot1Observations, GetCommands, JPGImage,
+import cv2
+from aido_schemas import (Duckiebot1Observations, GetCommands, JPGImage,
                           protocol_agent_duckiebot1)
 from zuper_nodes_wrapper.struct import MsgReceived
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
@@ -62,21 +61,18 @@ class DuckiebotBridge:
                         time.sleep(0.01)
                 continue
 
-            np_arr = np.frombuffer(self.client.image, np.uint8)
-            image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-            jpg_data = rgb2jpg(image_np)
+            bgr_img = self.client.decode_image()
+            jpg_data = bgr2jpg(bgr_img)
             camera = JPGImage(jpg_data)
             obs = Duckiebot1Observations(camera)
-            # TODO fix time for t_effective
-            ro = DB18RobotObservations(os.getenv('HOSTNAME'), time.time(), obs)
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
 
             # obs = {'camera': {'jpg_data': data}}
-            self.ci.write_topic_and_expect_zero('observations', ro)
+            self.ci.write_topic_and_expect_zero('observations', obs)
             gc = GetCommands(at_time=time.time())
             r: MsgReceived = self.ci.write_topic_and_expect('get_commands', gc, expect='commands')
-            wheels = r.data.commands.wheels
+            wheels = r.data.wheels
             lw, rw = wheels.motor_left, wheels.motor_right
             commands = {u'motor_right': rw, u'motor_left': lw}
 
@@ -88,8 +84,7 @@ class DuckiebotBridge:
             t_last_received = time.time()
 
 
-def rgb2jpg(rgb: np.ndarray) -> bytes:
-    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+def bgr2jpg(bgr: np.ndarray) -> bytes:
     compress = cv2.imencode('.jpg', bgr)[1]
     jpg_data = np.array(compress).tostring()
     return jpg_data
