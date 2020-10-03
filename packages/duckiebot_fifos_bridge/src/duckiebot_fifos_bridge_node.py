@@ -29,7 +29,7 @@ class DuckiebotBridge:
         self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT,
                                      expect_protocol=protocol_agent_duckiebot1,
                                      nickname='agent',
-                                     timeout=30)
+                                     timeout=3600)
         self.ci.write_topic_and_expect_zero('seed', 32)
         self.ci.write_topic_and_expect_zero('episode_start', {'episode_name': 'episode'})
         logger.info('DuckiebotBridge successfully sent to the agent the seed and episode name.')
