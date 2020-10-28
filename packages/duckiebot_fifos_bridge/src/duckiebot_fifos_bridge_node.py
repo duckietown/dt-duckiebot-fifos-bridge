@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 import logging
-import os
 import signal
 import sys
 import time
-import numpy as np
+
 import cv2
-from aido_schemas import (Duckiebot1Observations, GetCommands, JPGImage,
-                          protocol_agent_duckiebot1)
+import numpy as np
 from zuper_nodes_wrapper.struct import MsgReceived
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
 
+from aido_schemas import (DB20Observations, DB20Odometry, GetCommands, JPGImage,
+                          protocol_agent_DB20)
 from duckiebot_fifos_bridge.rosclient import ROSClient
 
 logger = logging.getLogger('DuckiebotBridge')
@@ -27,7 +27,7 @@ class DuckiebotBridge:
         AIDONODE_DATA_OUT = '/fifos/agent-out'
         logger.info('DuckiebotBridge starting communicating with the agent.')
         self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT,
-                                     expect_protocol=protocol_agent_duckiebot1,
+                                     expect_protocol=protocol_agent_DB20,
                                      nickname='agent',
                                      timeout=3600)
         self.ci.write_topic_and_expect_zero('seed', 32)
@@ -63,7 +63,13 @@ class DuckiebotBridge:
 
             jpg_data = self.client.image_data
             camera = JPGImage(jpg_data)
-            obs = Duckiebot1Observations(camera)
+            resolution_rad: float = np.pi * 2 / 180
+
+            axis_left_rad: float = 0.0
+            axis_right_rad: float = 0.0
+            odometry = DB20Odometry(axis_left_rad=axis_left_rad, axis_right_rad=axis_right_rad,
+                                    resolution_rad=resolution_rad)
+            obs = DB20Observations(camera, odometry)
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
 
