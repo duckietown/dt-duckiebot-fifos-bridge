@@ -63,17 +63,16 @@ class DuckiebotBridge:
 
             jpg_data = self.client.image_data
             camera = JPGImage(jpg_data)
-            resolution_rad: float = np.pi * 2 / 180
+            resolution_rad: float = np.pi * 2 / 135
 
-            axis_left_rad: float = 0.0
-            axis_right_rad: float = 0.0
+            axis_left_rad: float = self.client.left_encoder_ticks * self.client.resolution_rad
+            axis_right_rad: float = self.client.right_encoder_ticks * self.client.resolution_rad
             odometry = DB20Odometry(axis_left_rad=axis_left_rad, axis_right_rad=axis_right_rad,
                                     resolution_rad=resolution_rad)
             obs = DB20Observations(camera, odometry)
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
 
-            # obs = {'camera': {'jpg_data': data}}
             self.ci.write_topic_and_expect_zero('observations', obs)
             gc = GetCommands(at_time=time.time())
             r: MsgReceived = self.ci.write_topic_and_expect('get_commands', gc, expect='commands')
