@@ -56,8 +56,10 @@ class ROSClient:
         # if this parameter is not set, we default to 0
         resolution = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/resolution', 0)
         if resolution != 0:
+            logger.info(f'got resolution of {resolution} from encoder')
             self.resolution_rad = np.pi * 2/resolution
         else:
+            logger.info('got resolution of 0, either no encoders or resolution param not read properly')
             self.resolution_rad = 0
         self.left_encoder_ticks = 0
         self.right_encoder_ticks = 0
