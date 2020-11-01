@@ -36,7 +36,7 @@ class ROSClient:
         msg = 'ROSClient initialized.'
         logger.info(msg)
 
-        cmd_topic = f'/{self.vehicle}/wheels_driver_node/wheels_cmd
+        cmd_topic = f'/{self.vehicle}/wheels_driver_node/wheels_cmd'
         self.cmd_pub = rospy.Publisher(cmd_topic, WheelsCmdStamped, queue_size=10)
         logger.info('wheel command publisher created')
 
