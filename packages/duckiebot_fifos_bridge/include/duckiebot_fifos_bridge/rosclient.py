@@ -55,7 +55,10 @@ class ROSClient:
         # we arbitrarily take the resolution of the left encoder since we are assuming them to be the same
         # if this parameter is not set, we default to 0
         resolution = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/resolution', 0)
-        self.resolution_rad = np.pi * 2/resolution
+        if resolution != 0:
+            self.resolution_rad = np.pi * 2/resolution
+        else:
+            self.resolution_rad = 0
         self.left_encoder_ticks = 0
         self.right_encoder_ticks = 0
 
