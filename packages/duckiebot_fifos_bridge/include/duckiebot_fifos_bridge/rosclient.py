@@ -2,9 +2,10 @@ import logging
 import os
 import cv2
 from cv_bridge import CvBridge
+import numpy as np
 
 import rospy
-from duckietown_msgs.msg import WheelsCmdStamped
+from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped
 from sensor_msgs.msg import CompressedImage
 
 logger = logging.getLogger('ROSClient')
@@ -19,8 +20,12 @@ class ROSClient:
 
         self.nsent_commands = 0
         self.nreceived_images = 0
+        self.nreceived_encoder_left = 0
+        self.nreceived_encoder_right = 0
+
         self.shutdown = False
 
+        # we are initialized if we have received a camera image
         self.initialized = False
 
         # Initializes the node
@@ -31,16 +36,36 @@ class ROSClient:
         msg = 'ROSClient initialized.'
         logger.info(msg)
 
-        topic = f'/{self.vehicle}/wheels_driver_node/wheels_cmd'
+        cmd_topic = f'/{self.vehicle}/wheels_driver_node/wheels_cmd'
+        self.cmd_pub = rospy.Publisher(cmd_topic, WheelsCmdStamped, queue_size=10)
+        logger.info('wheel command publisher created')
 
-        self.cmd_pub = rospy.Publisher(topic, WheelsCmdStamped, queue_size=10)
-        logger.info('publisher created')
-        topic = f'/{self.vehicle}/camera_node/image/compressed'
-        self.cam_sub = rospy.Subscriber(topic, CompressedImage, self._cam_cb)
+        img_topic = f'/{self.vehicle}/camera_node/image/compressed'
+        self.cam_sub = rospy.Subscriber(img_topic, CompressedImage, self._cam_cb)
+        logger.info('camera subscriber created')
+
+        left_encoder_topic = f'/{self.vehicle}/left_wheel_encoder_node/tick'
+        self.left_encoder_sub = rospy.Subscriber(left_encoder_topic, WheelEncoderStamped , self._left_encoder_cb)
+        logger.info('left encoder subscriber created')
+
+        right_encoder_topic = f'/{self.vehicle}/right_wheel_encoder_node/tick'
+        self.right_encoder_sub = rospy.Subscriber(right_encoder_topic, WheelEncoderStamped , self._right_encoder_cb)
+        logger.info('right encoder subscriber created')
+
+        # we arbitrarily take the resolution of the left encoder since we are assuming them to be the same
+        # if this parameter is not set, we default to 0
+        resolution = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/resolution', 0)
+        if resolution != 0:
+            logger.info(f'got resolution of {resolution} from encoder')
+            self.resolution_rad = np.pi * 2/resolution
+        else:
+            logger.info('got resolution of 0, either no encoders or resolution param not read properly')
+            self.resolution_rad = 0
+        self.left_encoder_ticks = 0
+        self.right_encoder_ticks = 0
 
         self.bridge = CvBridge()
 
-        logger.info('subscriber created')
 
     def on_shutdown(self):
         self.shutdown = True
@@ -48,6 +73,20 @@ class ROSClient:
         logger.info(msg)
         commands = {u'motor_right': 0.0, u'motor_left': 0.0}
         self.send_commands(commands)
+
+    def _left_encoder_cb(self,msg):
+        self.left_encoder_ticks = msg.data
+        if self.nreceived_encoder_left == 0:
+            msg = 'ROSClient received first data from left encoder'
+            logger.info(msg)
+        self.nreceived_encoder_left += 1
+
+    def _right_encoder_cb(self, msg):
+        self.right_encoder_ticks = msg.data
+        if self.nreceived_encoder_right == 0:
+            msg = 'ROSClient received first data from right encoder'
+            logger.info(msg)
+        self.nreceived_encoder_right += 1
 
     def _cam_cb(self, msg):
         """
