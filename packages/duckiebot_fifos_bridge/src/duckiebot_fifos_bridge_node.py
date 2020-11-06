@@ -4,13 +4,14 @@ import logging
 import signal
 import sys
 import time
+from typing import cast
 
 import cv2
 import numpy as np
 from zuper_nodes_wrapper.struct import MsgReceived
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
 
-from aido_schemas import (DB20Observations, DB20Odometry, GetCommands, JPGImage,
+from aido_schemas import (DB20Commands, DB20Observations, DB20Odometry, GetCommands, JPGImage,
                           protocol_agent_DB20)
 from duckiebot_fifos_bridge.rosclient import ROSClient
 
