@@ -64,10 +64,10 @@ class DuckiebotBridge:
 
             jpg_data = self.client.image_data
             camera = JPGImage(jpg_data)
-            resolution_rad: float = np.pi * 2 / 135
+            resolution_rad: float = float(np.pi * 2 / 135)
 
-            axis_left_rad: float = self.client.left_encoder_ticks * self.client.resolution_rad
-            axis_right_rad: float = self.client.right_encoder_ticks * self.client.resolution_rad
+            axis_left_rad: float = float(self.client.left_encoder_ticks * self.client.resolution_rad)
+            axis_right_rad: float = float(self.client.right_encoder_ticks * self.client.resolution_rad)
             odometry = DB20Odometry(axis_left_rad=axis_left_rad, axis_right_rad=axis_right_rad,
                                     resolution_rad=resolution_rad)
             obs = DB20Observations(camera, odometry)
