@@ -24,8 +24,8 @@ class DuckiebotBridge:
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-        AIDONODE_DATA_IN = '/fifos/agent-in'
-        AIDONODE_DATA_OUT = '/fifos/agent-out'
+        AIDONODE_DATA_IN = '/fifos/ego0-in'
+        AIDONODE_DATA_OUT = '/fifos/ego0-out'
         logger.info('DuckiebotBridge starting communicating with the agent.')
         self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT,
                                      expect_protocol=protocol_agent_DB20,
