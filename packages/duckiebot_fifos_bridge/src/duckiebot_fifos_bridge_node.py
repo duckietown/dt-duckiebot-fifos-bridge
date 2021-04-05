@@ -40,6 +40,7 @@ class DuckiebotBridge:
 
     def exit_gracefully(self, signum, frame):
         logger.info('DuckiebotBridge exiting gracefully.')
+        self.client.on_shutdown()
         sys.exit(0)
 
     def run(self):
