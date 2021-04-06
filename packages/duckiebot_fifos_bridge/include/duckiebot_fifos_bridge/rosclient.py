@@ -5,8 +5,10 @@ from cv_bridge import CvBridge
 import numpy as np
 
 import rospy
-from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped
+from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped, LEDPattern
+from std_msgs.msg import ColorRGBA
 from sensor_msgs.msg import CompressedImage
+from duckietown_msgs.srv import SetCustomLEDPattern
 
 logger = logging.getLogger('ROSClient')
 logger.setLevel(logging.DEBUG)
@@ -64,6 +66,9 @@ class ROSClient:
         self.left_encoder_ticks = 0
         self.right_encoder_ticks = 0
 
+        led_set_pattern_topic = f'/{self.vehicle}/led_emitter_node/set_custom_pattern'
+        self.change_led_pattern = rospy.ServiceProxy(led_set_pattern_topic, SetCustomLEDPattern)
+        
         self.bridge = CvBridge()
 
 
@@ -116,3 +121,36 @@ class ROSClient:
 
         self.cmd_pub.publish(cmd_msg)
         self.nsent_commands += 1
+
+    def change_leds(self, data):
+        """
+        Calls the change LED service
+        """
+        def createRGBAmsg(a):
+            msg = ColorRGBA()
+            msg.r = a[0]
+            msg.g = a[1]
+            msg.b = a[2]
+            msg.a = 1
+            return msg
+
+        
+        led_pattern = LEDPattern()
+        time = rospy.get_rostime()
+        led_pattern.header.stamp.secs = time.secs
+        led_pattern.header.stamp.nsecs = time.nsecs
+        c=createRGBAmsg(data[u'center'])
+        fl=createRGBAmsg(data[u'front_left'])
+        fr=createRGBAmsg(data[u'front_right'])
+        bl=createRGBAmsg(data[u'back_left'])
+        br=createRGBAmsg(data[u'back_right'])
+        led_pattern.rgb_vals = [c,fl,fr,bl,br]
+        led_pattern.color_mask = [1,1,1,1,1]
+        led_pattern.frequency = 1.0
+        led_pattern.frequency_mask = [1,1,1,1,1]
+        try:
+            resp = self.change_led_pattern(led_pattern)
+            print(resp)
+        except Exception as e:
+            print(e)
+

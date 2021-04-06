@@ -13,7 +13,7 @@ from zuper_nodes_wrapper.struct import MsgReceived
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
 
 from aido_schemas import (DB20Commands, DB20Observations, DB20Odometry, GetCommands, JPGImage,
-                          protocol_agent_DB20)
+                          protocol_agent_DB20, RGB, LEDSCommands)
 from duckiebot_fifos_bridge.rosclient import ROSClient
 
 logger = logging.getLogger('DuckiebotBridge')
@@ -81,15 +81,42 @@ class DuckiebotBridge:
             r: MsgReceived = self.ci.write_topic_and_expect('get_commands', gc, expect='commands')
             wheels = r.data.wheels
             lw, rw = wheels.motor_left, wheels.motor_right
-            commands = {u'motor_right': rw, u'motor_left': lw}
-
-            self.client.send_commands(commands)
+            pwm_commands = {u'motor_right': rw, u'motor_left': lw}
+            self.client.send_commands(pwm_commands)
+            leds = r.data.LEDS
+            c = RGBfloat2int(leds.center)
+            fl = RGBfloat2int(leds.front_left)
+            fr = RGBfloat2int(leds.front_right)
+            bl = RGBfloat2int(leds.back_left)
+            br = RGBfloat2int(leds.back_right)
+            led_commands = {
+                u'center':c,
+                u'front_left':fl,
+                u'front_right':fr,
+                u'back_left':bl,
+                u'back_right':br,
+            }
+            self.client.change_leds(led_commands)
+            
             if nimages_received == 0:
                 logger.info('DuckiebotBridge published the first commands.')
 
             nimages_received += 1
             t_last_received = time.time()
 
+
+
+def RGBfloat2int(from_fifo: RGB) -> int:
+    b=[]
+    for a in [from_fifo.r, from_fifo.g, from_fifo.b]:
+        test_rgb_float_value(a)
+        b.append(int(a*255))
+    return b
+
+def test_rgb_float_value(channel: float):
+    if channel > 1.0 or channel < 0.0:
+        logger.error(f'LED value out of range {channel}')
+    
 
 def bgr2jpg(bgr: np.ndarray) -> bytes:
     compress = cv2.imencode('.jpg', bgr)[1]
