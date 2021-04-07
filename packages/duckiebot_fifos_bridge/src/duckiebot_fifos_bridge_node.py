@@ -84,19 +84,8 @@ class DuckiebotBridge:
             pwm_commands = {u'motor_right': rw, u'motor_left': lw}
             self.client.send_commands(pwm_commands)
             leds = r.data.LEDS
-            c = RGBfloat2int(leds.center)
-            fl = RGBfloat2int(leds.front_left)
-            fr = RGBfloat2int(leds.front_right)
-            bl = RGBfloat2int(leds.back_left)
-            br = RGBfloat2int(leds.back_right)
-            led_commands = {
-                u'center':c,
-                u'front_left':fl,
-                u'front_right':fr,
-                u'back_left':bl,
-                u'back_right':br,
-            }
-            self.client.change_leds(led_commands)
+            logger.debug(f"Sending leds to ROSClient")
+            self.client.change_leds(r.data.LEDS)
             
             if nimages_received == 0:
                 logger.info('DuckiebotBridge published the first commands.')
@@ -106,12 +95,12 @@ class DuckiebotBridge:
 
 
 
-def RGBfloat2int(from_fifo: RGB) -> int:
-    b=[]
-    for a in [from_fifo.r, from_fifo.g, from_fifo.b]:
-        test_rgb_float_value(a)
-        b.append(int(a*255))
-    return b
+# def RGBfloat2int(from_fifo: RGB) -> int:
+#     b=[]
+#     for a in [from_fifo.r, from_fifo.g, from_fifo.b]:
+#         test_rgb_float_value(a)
+#         b.append(int(a*255))
+#     return b
 
 def test_rgb_float_value(channel: float):
     if channel > 1.0 or channel < 0.0:

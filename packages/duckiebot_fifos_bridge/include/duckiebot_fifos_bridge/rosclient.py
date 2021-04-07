@@ -128,9 +128,9 @@ class ROSClient:
         """
         def createRGBAmsg(a):
             msg = ColorRGBA()
-            msg.r = a[0]
-            msg.g = a[1]
-            msg.b = a[2]
+            msg.r = a.r
+            msg.g = a.g
+            msg.b = a.b
             msg.a = 1
             return msg
 
@@ -139,18 +139,18 @@ class ROSClient:
         time = rospy.get_rostime()
         led_pattern.header.stamp.secs = time.secs
         led_pattern.header.stamp.nsecs = time.nsecs
-        c=createRGBAmsg(data[u'center'])
-        fl=createRGBAmsg(data[u'front_left'])
-        fr=createRGBAmsg(data[u'front_right'])
-        bl=createRGBAmsg(data[u'back_left'])
-        br=createRGBAmsg(data[u'back_right'])
-        led_pattern.rgb_vals = [c,fl,fr,bl,br]
+        c=createRGBAmsg(data.center)
+        fl=createRGBAmsg(data.front_left)
+        fr=createRGBAmsg(data.front_right)
+        bl=createRGBAmsg(data.back_left)
+        br=createRGBAmsg(data.back_right)
+        led_pattern.rgb_vals = [fl,bl,c,br,fr]
         led_pattern.color_mask = [1,1,1,1,1]
-        led_pattern.frequency = 1.0
+        led_pattern.frequency = 0.0
         led_pattern.frequency_mask = [1,1,1,1,1]
         try:
             resp = self.change_led_pattern(led_pattern)
-            print(resp)
+            logger.debug(f"Service LED answers: {resp}")
         except Exception as e:
             print(e)
 
