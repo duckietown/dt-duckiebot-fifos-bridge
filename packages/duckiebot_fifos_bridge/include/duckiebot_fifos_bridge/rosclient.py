@@ -1,7 +1,5 @@
 import logging
 import os
-import cv2
-from cv_bridge import CvBridge
 import numpy as np
 
 import rospy
@@ -11,14 +9,17 @@ from sensor_msgs.msg import CompressedImage
 from duckietown_msgs.srv import SetCustomLEDPattern
 
 logger = logging.getLogger('ROSClient')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ROSClient:
     def __init__(self):
         # Get the vehicle name, which comes in as HOSTNAME
-        # TODO not sure about this
-        self.vehicle = os.getenv('VEHICLE_NAME')
+        self.vehicle = os.environ.get('VEHICLE_NAME', None)
+
+        if self.vehicle is None:
+            rospy.logerr("The variable VEHICLE_NAME is not set. Exiting...")
+            exit(1)
 
         self.nsent_commands = 0
         self.nreceived_images = 0
@@ -47,11 +48,11 @@ class ROSClient:
         logger.info('camera subscriber created')
 
         left_encoder_topic = f'/{self.vehicle}/left_wheel_encoder_node/tick'
-        self.left_encoder_sub = rospy.Subscriber(left_encoder_topic, WheelEncoderStamped , self._left_encoder_cb)
+        self.left_encoder_sub = rospy.Subscriber(left_encoder_topic, WheelEncoderStamped, self._left_encoder_cb, queue_size=1)
         logger.info('left encoder subscriber created')
 
         right_encoder_topic = f'/{self.vehicle}/right_wheel_encoder_node/tick'
-        self.right_encoder_sub = rospy.Subscriber(right_encoder_topic, WheelEncoderStamped , self._right_encoder_cb)
+        self.right_encoder_sub = rospy.Subscriber(right_encoder_topic, WheelEncoderStamped, self._right_encoder_cb, queue_size=1)
         logger.info('right encoder subscriber created')
 
         # we arbitrarily take the resolution of the left encoder since we are assuming them to be the same
@@ -68,9 +69,6 @@ class ROSClient:
 
         led_set_pattern_topic = f'/{self.vehicle}/led_emitter_node/set_custom_pattern'
         self.change_led_pattern = rospy.ServiceProxy(led_set_pattern_topic, SetCustomLEDPattern)
-        
-        self.bridge = CvBridge()
-
 
     def on_shutdown(self):
         self.shutdown = True
@@ -150,7 +148,7 @@ class ROSClient:
         led_pattern.frequency_mask = [1,1,1,1,1]
         try:
             resp = self.change_led_pattern(led_pattern)
-            print(resp)
+            # print(resp)
         except Exception as e:
             print(e)
 
