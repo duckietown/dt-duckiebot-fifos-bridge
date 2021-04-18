@@ -5,7 +5,8 @@ import signal
 import sys
 import os
 import time
-from typing import cast
+from threading import Thread
+import rospy
 
 import cv2
 import numpy as np
@@ -105,7 +106,6 @@ class DuckiebotBridge:
             t_last_received = time.time()
 
 
-
 def RGBfloat2int(from_fifo: RGB) -> int:
     b=[]
     for a in [from_fifo.r, from_fifo.g, from_fifo.b]:
@@ -126,7 +126,11 @@ def bgr2jpg(bgr: np.ndarray) -> bytes:
 
 def main():
     node = DuckiebotBridge()
-    node.run()
+
+    worker = Thread(target=node.run)
+    worker.start()
+
+    rospy.spin()
 
 
 if __name__ == '__main__':

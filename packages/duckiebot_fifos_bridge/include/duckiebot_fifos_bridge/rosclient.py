@@ -3,16 +3,19 @@ import os
 import numpy as np
 
 import rospy
+import message_filters
 from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped, LEDPattern
 from std_msgs.msg import ColorRGBA
 from sensor_msgs.msg import CompressedImage
 from duckietown_msgs.srv import SetCustomLEDPattern
 
 logger = logging.getLogger('ROSClient')
-logger.setLevel(logging.INFO)
+logging.basicConfig()
+logger.setLevel(logging.DEBUG)
 
 
 class ROSClient:
+
     def __init__(self):
         # Get the vehicle name, which comes in as HOSTNAME
         self.vehicle = os.environ.get('VEHICLE_NAME', None)
@@ -23,8 +26,7 @@ class ROSClient:
 
         self.nsent_commands = 0
         self.nreceived_images = 0
-        self.nreceived_encoder_left = 0
-        self.nreceived_encoder_right = 0
+        self.nreceived_encoders = 0
 
         self.shutdown = False
 
@@ -35,7 +37,7 @@ class ROSClient:
         rospy.init_node('ROSClient')
         rospy.on_shutdown(self.on_shutdown)
 
-        self.r = rospy.Rate(100)
+        # self.r = rospy.Rate(100)
         msg = 'ROSClient initialized.'
         logger.info(msg)
 
@@ -47,13 +49,21 @@ class ROSClient:
         self.cam_sub = rospy.Subscriber(img_topic, CompressedImage, self._cam_cb)
         logger.info('camera subscriber created')
 
+        # Setup subscribers
         left_encoder_topic = f'/{self.vehicle}/left_wheel_encoder_node/tick'
-        self.left_encoder_sub = rospy.Subscriber(left_encoder_topic, WheelEncoderStamped, self._left_encoder_cb, queue_size=1)
-        logger.info('left encoder subscriber created')
-
         right_encoder_topic = f'/{self.vehicle}/right_wheel_encoder_node/tick'
-        self.right_encoder_sub = rospy.Subscriber(right_encoder_topic, WheelEncoderStamped, self._right_encoder_cb, queue_size=1)
-        logger.info('right encoder subscriber created')
+        self.left_encoder_sub = message_filters.Subscriber(left_encoder_topic, WheelEncoderStamped)
+        self.right_encoder_sub = message_filters.Subscriber(right_encoder_topic, WheelEncoderStamped)
+
+        # Setup the time synchronizer
+        encoder_left_hz = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/publish_frequency')
+        encoder_right_hz = rospy.get_param(f'/{self.vehicle}/right_wheel_encoder_node/publish_frequency')
+        encoder_hz = min(encoder_left_hz, encoder_right_hz)
+        logger.info(f"Encoders have frequencies: Left({encoder_left_hz}Hz), Right({encoder_right_hz}Hz)")
+        logger.info(f"Synchronizing encoders at a frequency of {encoder_hz}Hz")
+        self.ts_encoders = message_filters.ApproximateTimeSynchronizer(
+            [self.left_encoder_sub, self.right_encoder_sub], 10, 1.0 / encoder_hz)
+        self.ts_encoders.registerCallback(self._encoder_cb)
 
         # we arbitrarily take the resolution of the left encoder since we are assuming them to be the same
         # if this parameter is not set, we default to 0
@@ -77,19 +87,15 @@ class ROSClient:
         commands = {u'motor_right': 0.0, u'motor_left': 0.0}
         self.send_commands(commands)
 
-    def _left_encoder_cb(self,msg):
-        self.left_encoder_ticks = msg.data
-        if self.nreceived_encoder_left == 0:
-            msg = 'ROSClient received first data from left encoder'
+    def _encoder_cb(self, msg_left, msg_right):
+        self.left_encoder_ticks = msg_left.data
+        self.right_encoder_ticks = msg_right.data
+        # ---
+        if self.nreceived_encoders == 0:
+            msg = 'ROSClient received first data from the encoders'
             logger.info(msg)
-        self.nreceived_encoder_left += 1
-
-    def _right_encoder_cb(self, msg):
-        self.right_encoder_ticks = msg.data
-        if self.nreceived_encoder_right == 0:
-            msg = 'ROSClient received first data from right encoder'
-            logger.info(msg)
-        self.nreceived_encoder_right += 1
+        # ---
+        self.nreceived_encoders += 1
 
     def _cam_cb(self, msg):
         """
