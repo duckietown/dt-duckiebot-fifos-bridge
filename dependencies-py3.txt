@@ -1,2 +1,2 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
-aido-protocols-daffy
+aido-protocols-daffy>=6.0.41
