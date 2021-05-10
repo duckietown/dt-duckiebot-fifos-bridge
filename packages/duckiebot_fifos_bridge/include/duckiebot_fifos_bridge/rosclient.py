@@ -49,30 +49,33 @@ class ROSClient:
         self.cam_sub = rospy.Subscriber(img_topic, CompressedImage, self._cam_cb)
         logger.info('camera subscriber created')
 
-        # Setup subscribers
-        left_encoder_topic = f'/{self.vehicle}/left_wheel_encoder_node/tick'
-        right_encoder_topic = f'/{self.vehicle}/right_wheel_encoder_node/tick'
-        self.left_encoder_sub = message_filters.Subscriber(left_encoder_topic, WheelEncoderStamped)
-        self.right_encoder_sub = message_filters.Subscriber(right_encoder_topic, WheelEncoderStamped)
-
         # Setup the time synchronizer
-        encoder_left_hz = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/publish_frequency')
-        encoder_right_hz = rospy.get_param(f'/{self.vehicle}/right_wheel_encoder_node/publish_frequency')
-        encoder_hz = min(encoder_left_hz, encoder_right_hz)
-        logger.info(f"Encoders have frequencies: Left({encoder_left_hz}Hz), Right({encoder_right_hz}Hz)")
-        logger.info(f"Synchronizing encoders at a frequency of {encoder_hz}Hz")
-        self.ts_encoders = message_filters.ApproximateTimeSynchronizer(
-            [self.left_encoder_sub, self.right_encoder_sub], 10, 1.0 / encoder_hz)
-        self.ts_encoders.registerCallback(self._encoder_cb)
+        encoder_left_hz = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/publish_frequency', None)
+        encoder_right_hz = rospy.get_param(f'/{self.vehicle}/right_wheel_encoder_node/publish_frequency', None)
+        if encoder_left_hz is not None and encoder_right_hz is not None:
+            # Setup subscribers
+            left_encoder_topic = f'/{self.vehicle}/left_wheel_encoder_node/tick'
+            right_encoder_topic = f'/{self.vehicle}/right_wheel_encoder_node/tick'
+            self.left_encoder_sub = message_filters.Subscriber(left_encoder_topic, WheelEncoderStamped)
+            self.right_encoder_sub = message_filters.Subscriber(right_encoder_topic, WheelEncoderStamped)
+            # sync topics
+            encoder_hz = min(encoder_left_hz, encoder_right_hz)
+            logger.info(f"Encoders have frequencies: Left({encoder_left_hz}Hz), Right({encoder_right_hz}Hz)")
+            logger.info(f"Synchronizing encoders at a frequency of {encoder_hz}Hz")
+            self.ts_encoders = message_filters.ApproximateTimeSynchronizer(
+                [self.left_encoder_sub, self.right_encoder_sub], 10, 1.0 / encoder_hz)
+            self.ts_encoders.registerCallback(self._encoder_cb)
+        else:
+            logger.info("The robot does not seem to have encoders. Skipping encoders integration.")
 
         # we arbitrarily take the resolution of the left encoder since we are assuming them to be the same
         # if this parameter is not set, we default to 0
-        resolution = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/resolution', 0)
-        if resolution != 0:
-            logger.info(f'got resolution of {resolution} from encoder')
+        resolution = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/resolution', None)
+        if resolution is not None:
+            logger.info(f'Got resolution of {resolution} from encoder')
             self.resolution_rad = np.pi * 2/resolution
         else:
-            logger.info('got resolution of 0, either no encoders or resolution param not read properly')
+            logger.info("The robot does not seem to have encoders. Skipping encoders integration.")
             self.resolution_rad = 0
         self.left_encoder_ticks = 0
         self.right_encoder_ticks = 0
