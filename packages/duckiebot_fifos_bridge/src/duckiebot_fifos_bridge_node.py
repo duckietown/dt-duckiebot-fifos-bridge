@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 
 import logging
+import os
 import signal
 import sys
-import os
 import time
 from threading import Thread
-import rospy
 
-import cv2
 import numpy as np
+import rospy
+from aido_schemas import (DB20Observations, DB20Odometry, GetCommands, JPGImage,
+                          protocol_agent_DB20, RGB)
 from zuper_nodes_wrapper.struct import MsgReceived
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
 
-from aido_schemas import (DB20Commands, DB20Observations, DB20Odometry, GetCommands, JPGImage,
-                          protocol_agent_DB20, RGB, LEDSCommands)
 from duckiebot_fifos_bridge.rosclient import ROSClient
 
 logger = logging.getLogger('DuckiebotBridge')
@@ -22,6 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class DuckiebotBridge:
+
     def __init__(self):
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
@@ -116,12 +116,6 @@ def RGBfloat2int(from_fifo: RGB) -> int:
 def test_rgb_float_value(channel: float):
     if channel > 1.0 or channel < 0.0:
         logger.error(f'LED value out of range {channel}')
-    
-
-def bgr2jpg(bgr: np.ndarray) -> bytes:
-    compress = cv2.imencode('.jpg', bgr)[1]
-    jpg_data = np.array(compress).tostring()
-    return jpg_data
 
 
 def main():
