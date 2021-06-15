@@ -67,7 +67,7 @@ class DuckiebotBridge:
 
             jpg_data = self.client.image_data
             camera = JPGImage(jpg_data)
-            resolution_rad: float = float(np.pi * 2 / 135)
+            resolution_rad: float = float(np.pi * 2 / 135) # FIXME: hardcoded
 
             axis_left_rad: float = float(self.client.left_encoder_ticks * self.client.resolution_rad)
             axis_right_rad: float = float(self.client.right_encoder_ticks * self.client.resolution_rad)
@@ -98,7 +98,7 @@ class DuckiebotBridge:
                 u'back_right':br,
             }
             # self.client.change_leds(led_commands)
-            
+
             if nimages_received == 0:
                 logger.info('DuckiebotBridge published the first commands.')
 
