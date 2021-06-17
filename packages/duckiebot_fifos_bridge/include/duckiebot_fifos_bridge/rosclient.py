@@ -1,18 +1,20 @@
 import logging
 import os
+
+import message_filters
 import numpy as np
 
 import rospy
-import message_filters
-from duckietown_msgs.msg import WheelsCmdStamped, WheelEncoderStamped, LEDPattern
-from std_msgs.msg import ColorRGBA
-from sensor_msgs.msg import CompressedImage
+from duckietown_msgs.msg import LEDPattern, WheelEncoderStamped, WheelsCmdStamped
 from duckietown_msgs.srv import SetCustomLEDPattern
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import ColorRGBA
 
 logger = logging.getLogger('ROSClient')
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
+__all__ = ['ROSClient']
 
 class ROSClient:
 
@@ -27,6 +29,8 @@ class ROSClient:
         self.nsent_commands = 0
         self.nreceived_images = 0
         self.nreceived_encoders = 0
+        self.image_data_timestamp = -1
+        self.encoder_stamp = -1
 
         self.shutdown = False
 
@@ -51,7 +55,8 @@ class ROSClient:
 
         # Setup the time synchronizer
         encoder_left_hz = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/publish_frequency', None)
-        encoder_right_hz = rospy.get_param(f'/{self.vehicle}/right_wheel_encoder_node/publish_frequency', None)
+        encoder_right_hz = rospy.get_param(f'/{self.vehicle}/right_wheel_encoder_node/publish_frequency',
+                                           None)
         if encoder_left_hz is not None and encoder_right_hz is not None:
             # Setup subscribers
             left_encoder_topic = f'/{self.vehicle}/left_wheel_encoder_node/tick'
@@ -73,7 +78,7 @@ class ROSClient:
         resolution = rospy.get_param(f'/{self.vehicle}/left_wheel_encoder_node/resolution', None)
         if resolution is not None:
             logger.info(f'Got resolution of {resolution} from encoder')
-            self.resolution_rad = np.pi * 2/resolution
+            self.resolution_rad = np.pi * 2 / resolution
         else:
             logger.info("The robot does not seem to have encoders. Skipping encoders integration.")
             self.resolution_rad = 0
@@ -85,14 +90,16 @@ class ROSClient:
 
     def on_shutdown(self):
         self.shutdown = True
-        msg = 'ROSClient on_shutdown will send 0,0 command now.'
+        msg = 'ROSClient on_shutdown sends 0,0 command.'
         logger.info(msg)
         commands = {u'motor_right': 0.0, u'motor_left': 0.0}
         self.send_commands(commands)
 
-    def _encoder_cb(self, msg_left, msg_right):
+    def _encoder_cb(self, msg_left: WheelEncoderStamped, msg_right: WheelEncoderStamped):
         self.left_encoder_ticks = msg_left.data
         self.right_encoder_ticks = msg_right.data
+        self.encoder_stamp = max(msg_left.header.stamp.to_sec(), msg_right.header.stamp.to_sec())
+
         # ---
         if self.nreceived_encoders == 0:
             msg = 'ROSClient received first data from the encoders'
@@ -100,12 +107,14 @@ class ROSClient:
         # ---
         self.nreceived_encoders += 1
 
-    def _cam_cb(self, msg):
+    def _cam_cb(self, msg: CompressedImage):
         """
         Callback to listen to last outputted camera image and store it
         """
         self.image_msg = msg
         self.image_data = msg.data
+
+        self.image_data_timestamp = msg.header.stamp.to_time()
         self.initialized = True
         if self.nreceived_images == 0:
             msg = 'ROSClient received first camera image.'
@@ -118,8 +127,7 @@ class ROSClient:
         """
         time = rospy.get_rostime()
         cmd_msg = WheelsCmdStamped()
-        cmd_msg.header.stamp.secs = time.secs
-        cmd_msg.header.stamp.nsecs = time.nsecs
+        cmd_msg.header.stamp = time
         cmd_msg.vel_right = cmds[u'motor_right']
         cmd_msg.vel_left = cmds[u'motor_left']
         if self.nsent_commands == 0:
@@ -133,6 +141,7 @@ class ROSClient:
         """
         Calls the change LED service
         """
+
         def createRGBAmsg(a):
             msg = ColorRGBA()
             msg.r = a[0]
@@ -141,23 +150,21 @@ class ROSClient:
             msg.a = 1
             return msg
 
-        
         led_pattern = LEDPattern()
         time = rospy.get_rostime()
         led_pattern.header.stamp.secs = time.secs
         led_pattern.header.stamp.nsecs = time.nsecs
-        c=createRGBAmsg(data[u'center'])
-        fl=createRGBAmsg(data[u'front_left'])
-        fr=createRGBAmsg(data[u'front_right'])
-        bl=createRGBAmsg(data[u'back_left'])
-        br=createRGBAmsg(data[u'back_right'])
-        led_pattern.rgb_vals = [c,fl,fr,bl,br]
-        led_pattern.color_mask = [1,1,1,1,1]
+        c = createRGBAmsg(data[u'center'])
+        fl = createRGBAmsg(data[u'front_left'])
+        fr = createRGBAmsg(data[u'front_right'])
+        bl = createRGBAmsg(data[u'back_left'])
+        br = createRGBAmsg(data[u'back_right'])
+        led_pattern.rgb_vals = [c, fl, fr, bl, br]
+        led_pattern.color_mask = [1, 1, 1, 1, 1]
         led_pattern.frequency = 1.0
-        led_pattern.frequency_mask = [1,1,1,1,1]
+        led_pattern.frequency_mask = [1, 1, 1, 1, 1]
         try:
             resp = self.change_led_pattern(led_pattern)
             # print(resp)
         except Exception as e:
             print(e)
-

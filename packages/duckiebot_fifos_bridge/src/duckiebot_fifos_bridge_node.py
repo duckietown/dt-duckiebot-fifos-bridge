@@ -6,15 +6,16 @@ import signal
 import sys
 import time
 from threading import Thread
+from typing import List
 
 import numpy as np
+
 import rospy
-from aido_schemas import (DB20Observations, DB20Odometry, GetCommands, JPGImage,
-                          protocol_agent_DB20, RGB)
+from aido_schemas import (DB20ObservationsWithTimestamp, DB20OdometryWithTimestamp, GetCommands,
+                          JPGImageWithTimestamp, protocol_agent_DB20_timestamps, RGB)
+from duckiebot_fifos_bridge.rosclient import ROSClient
 from zuper_nodes_wrapper.struct import MsgReceived
 from zuper_nodes_wrapper.wrapper_outside import ComponentInterface
-
-from duckiebot_fifos_bridge.rosclient import ROSClient
 
 logger = logging.getLogger('DuckiebotBridge')
 logger.setLevel(logging.DEBUG)
@@ -26,11 +27,11 @@ class DuckiebotBridge:
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-        AIDONODE_DATA_IN = os.getenv("AIDONODE_DATA_IN","/fifos/ego0-in")
-        AIDONODE_DATA_OUT = os.getenv("AIDONODE_DATA_OUT","/fifos/ego0-out")
+        AIDONODE_DATA_IN = os.getenv("AIDONODE_DATA_IN", "/fifos/ego0-in")
+        AIDONODE_DATA_OUT = os.getenv("AIDONODE_DATA_OUT", "/fifos/ego0-out")
         logger.info('DuckiebotBridge starting communicating with the agent.')
         self.ci = ComponentInterface(AIDONODE_DATA_IN, AIDONODE_DATA_OUT,
-                                     expect_protocol=protocol_agent_DB20,
+                                     expect_protocol=protocol_agent_DB20_timestamps,
                                      nickname='agent',
                                      timeout=3600)
         self.ci.write_topic_and_expect_zero('seed', 32)
@@ -47,7 +48,7 @@ class DuckiebotBridge:
     def run(self):
         nimages_received = 0
         t0 = time.time()
-        t_last_received = None
+        t_last_transmitted = -1
         while True:
             if not self.client.initialized:
                 if nimages_received == 0:
@@ -55,25 +56,24 @@ class DuckiebotBridge:
                     msg = 'DuckiebotBridge still waiting for the first image: elapsed %s' % elapsed
                     logger.info(msg)
                     time.sleep(0.5)
-                else:
-                    elapsed = time.time() - t_last_received
-                    if elapsed > 2:
-                        msg = 'DuckiebotBridge has waited %s since last image' % elapsed
-                        logger.info(msg)
-                        time.sleep(0.5)
-                    else:
-                        time.sleep(0.01)
+                    continue
+
+            current_data_timestamp = max(self.client.image_data_timestamp, self.client.encoder_stamp)
+            if current_data_timestamp == t_last_transmitted:
+                time.sleep(0.005)
                 continue
+            t_last_transmitted = current_data_timestamp
 
             jpg_data = self.client.image_data
-            camera = JPGImage(jpg_data)
-            resolution_rad: float = float(np.pi * 2 / 135) # FIXME: hardcoded
+            camera = JPGImageWithTimestamp(jpg_data, timestamp=self.client.image_data_timestamp)
+            resolution_rad: float = float(np.pi * 2 / 135)  # FIXME: hardcoded
 
             axis_left_rad: float = float(self.client.left_encoder_ticks * self.client.resolution_rad)
             axis_right_rad: float = float(self.client.right_encoder_ticks * self.client.resolution_rad)
-            odometry = DB20Odometry(axis_left_rad=axis_left_rad, axis_right_rad=axis_right_rad,
-                                    resolution_rad=resolution_rad)
-            obs = DB20Observations(camera, odometry)
+            odometry = DB20OdometryWithTimestamp(axis_left_rad=axis_left_rad, axis_right_rad=axis_right_rad,
+                                                 resolution_rad=resolution_rad,
+                                                 timestamp=self.client.encoder_stamp)
+            obs = DB20ObservationsWithTimestamp(camera, odometry)
             if nimages_received == 0:
                 logger.info('DuckiebotBridge got the first image from ROS.')
 
@@ -91,11 +91,11 @@ class DuckiebotBridge:
             bl = RGBfloat2int(leds.back_left)
             br = RGBfloat2int(leds.back_right)
             led_commands = {
-                u'center':c,
-                u'front_left':fl,
-                u'front_right':fr,
-                u'back_left':bl,
-                u'back_right':br,
+                u'center': c,
+                u'front_left': fl,
+                u'front_right': fr,
+                u'back_left': bl,
+                u'back_right': br,
             }
             # self.client.change_leds(led_commands)
 
@@ -106,12 +106,13 @@ class DuckiebotBridge:
             t_last_received = time.time()
 
 
-def RGBfloat2int(from_fifo: RGB) -> int:
-    b=[]
+def RGBfloat2int(from_fifo: RGB) -> List[int]:
+    b = []
     for a in [from_fifo.r, from_fifo.g, from_fifo.b]:
         test_rgb_float_value(a)
-        b.append(int(a*255))
+        b.append(int(a * 255))
     return b
+
 
 def test_rgb_float_value(channel: float):
     if channel > 1.0 or channel < 0.0:
