@@ -60,7 +60,7 @@ class DuckiebotBridge:
 
             current_data_timestamp = max(self.client.image_data_timestamp, self.client.encoder_stamp)
             if current_data_timestamp == t_last_transmitted:
-                time.sleep(0.02)
+                time.sleep(0.005)
                 continue
             t_last_transmitted = current_data_timestamp
 
