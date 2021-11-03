@@ -29,8 +29,8 @@ class ROSClient:
         self.nsent_commands = 0
         self.nreceived_images = 0
         self.nreceived_encoders = 0
-        self.image_data_timestamp = -1
-        self.encoder_stamp = -1
+        self.image_data_timestamp = -1.0
+        self.encoder_stamp = -1.0
 
         self.shutdown = False
 
