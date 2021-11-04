@@ -1,6 +1,8 @@
 <launch>
+    <arg name="veh" doc="Name of vehicle."/>
 	<arg name="node_name" default="duckiebot_fifos_bridge_node"/>
     <arg name="pkg_name"  default="duckiebot_fifos_bridge"/>
-
-	<node pkg="$(arg pkg_name)" type="$(arg node_name).py" name="$(arg node_name)" output="screen"/>
+    <group ns="$arg veh)">
+	    <node pkg="$(arg pkg_name)" type="$(arg node_name).py" name="$(arg node_name)" output="screen"/>
+    </group>
 </launch>
