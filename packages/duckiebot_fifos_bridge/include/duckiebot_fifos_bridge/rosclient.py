@@ -45,7 +45,10 @@ class ROSClient:
         except rospy.RosException as e:
             logger.error(f"Failed to init_node {e}")
 
-        rospy.on_shutdown(self.on_shutdown)
+        try:
+            rospy.on_shutdown(self.on_shutdown)
+        except rospy.RosException as e:
+            logger.error(f"Failed to register on_shutdown callback {e}")
 
         # self.r = rospy.Rate(100)
         msg = 'ROSClient initialized.'
