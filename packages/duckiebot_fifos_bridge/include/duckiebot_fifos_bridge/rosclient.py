@@ -22,6 +22,8 @@ class ROSClient:
         # Get the vehicle name, which comes in as HOSTNAME
         self.vehicle = os.environ.get('VEHICLE_NAME', None)
 
+        logging.info("Initializing ROSClient")
+
         if self.vehicle is None:
             rospy.logerr("The variable VEHICLE_NAME is not set. Exiting...")
             exit(1)
