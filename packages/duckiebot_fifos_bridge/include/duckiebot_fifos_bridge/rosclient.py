@@ -14,7 +14,7 @@ logger = logging.getLogger('ROSClient')
 logging.basicConfig()
 logger.setLevel(logging.DEBUG)
 
-__all__ = ['ROSClient']
+#__all__ = ['ROSClient']
 
 class ROSClient:
 
