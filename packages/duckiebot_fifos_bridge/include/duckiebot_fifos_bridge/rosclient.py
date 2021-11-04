@@ -40,7 +40,11 @@ class ROSClient:
         self.initialized = False
 
         # Initializes the node
-        rospy.init_node('ROSClient')
+        try:
+            rospy.init_node('ROSClient')
+        except rospy.RosException as e:
+            logger.error(f"Failed to init_node {e}")
+
         rospy.on_shutdown(self.on_shutdown)
 
         # self.r = rospy.Rate(100)
