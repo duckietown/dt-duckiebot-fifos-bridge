@@ -44,11 +44,6 @@ class ROSClient:
         logger.info("here 2")
 
         # Initializes the node
-        try:
-            rospy.init_node("duckiebot-fifos-bridge")
-        except rospy.RosException as e:
-            logger.error(f"Failed to init_node {e}")
-            exit(1)
 
         logger.info("here 3")
 
