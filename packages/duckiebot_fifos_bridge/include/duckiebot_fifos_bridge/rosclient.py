@@ -52,6 +52,7 @@ class ROSClient:
             logger.error(f"Failed to init_node {e}")
             exit(1)
         rospy.loginfo("here 3")
+        print("we really didn't get here")
 
         try:
             rospy.on_shutdown(self.on_shutdown)
