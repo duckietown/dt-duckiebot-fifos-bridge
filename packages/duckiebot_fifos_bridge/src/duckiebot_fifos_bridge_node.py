@@ -131,11 +131,7 @@ def test_rgb_float_value(channel: float):
 
 
 def main():
-    try:
-        rospy.init_node("duckiebot-fifos-bridge")
-    except rospy.RosException as e:
-        logger.error(f"Failed to init_node {e}")
-        exit(1)
+
     node = DuckiebotBridge()
 
     worker = Thread(target=node.run)

@@ -13,7 +13,7 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-dt-exec roslaunch duckiebot_fifos_bridge duckiebot_fifos_bridge_node.launch veh:="${VEHICLE_NAME}"
+dt-exec-FG roslaunch --wait duckiebot_fifos_bridge duckiebot_fifos_bridge_node.launch veh:="${VEHICLE_NAME}"
 
 
 # ----------------------------------------------------------------------------
