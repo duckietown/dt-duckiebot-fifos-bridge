@@ -28,8 +28,6 @@ class ROSClient:
             logger.error("The variable VEHICLE_NAME is not set. Exiting...")
             exit(1)
 
-        logger.info("here 1")
-
         self.nsent_commands = 0
         self.nreceived_images = 0
         self.nreceived_encoders = 0
@@ -41,8 +39,6 @@ class ROSClient:
         # we are initialized if we have received a camera image
         self.initialized = False
 
-        logger.info("here 2")
-
         # Initializes the node
         try:
             rospy.init_node(
@@ -51,16 +47,12 @@ class ROSClient:
         except rospy.RosException as e:
             logger.error(f"Failed to init_node {e}")
             exit(1)
-        rospy.loginfo("here 3")
-        print("we really didn't get here")
 
         try:
             rospy.on_shutdown(self.on_shutdown)
         except rospy.RosException as e:
             logger.error(f"Failed to register on_shutdown callback {e}")
             exit(1)
-
-        logger.info("here 4")
 
         # self.r = rospy.Rate(100)
         msg = "ROSClient initialized."
