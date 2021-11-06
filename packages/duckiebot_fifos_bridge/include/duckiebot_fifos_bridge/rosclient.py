@@ -59,15 +59,11 @@ class ROSClient:
         root.addHandler(fh)
         root.addHandler(ch)
 
-        print("we really didn't get here")
-
         try:
             rospy.on_shutdown(self.on_shutdown)
         except rospy.RosException as e:
             rospy.logerror(f"Failed to register on_shutdown callback {e}")
             exit(1)
-
-        rospy.loginfo("here 4")
 
         # self.r = rospy.Rate(100)
         msg = "ROSClient initialized."
