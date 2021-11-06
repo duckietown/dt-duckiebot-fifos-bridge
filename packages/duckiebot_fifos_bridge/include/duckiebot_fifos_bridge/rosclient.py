@@ -10,9 +10,6 @@ from duckietown_msgs.srv import SetCustomLEDPattern
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import ColorRGBA
 
-logger = logging.getLogger("ROSClient")
-logging.basicConfig()
-logger.setLevel(logging.DEBUG)
 
 __all__ = ["ROSClient"]
 
@@ -22,13 +19,9 @@ class ROSClient:
         # Get the vehicle name, which comes in as HOSTNAME
         self.vehicle = os.environ.get("VEHICLE_NAME", None)
 
-        logger.info("Initializing ROSClient")
-
         if self.vehicle is None:
-            logger.error("The variable VEHICLE_NAME is not set. Exiting...")
+            rospy.logerror("The variable VEHICLE_NAME is not set. Exiting...")
             exit(1)
-
-        logger.info("here 1")
 
         self.nsent_commands = 0
         self.nreceived_images = 0
@@ -41,38 +34,52 @@ class ROSClient:
         # we are initialized if we have received a camera image
         self.initialized = False
 
-        logger.info("here 2")
-
         # Initializes the node
         try:
-            rospy.init_node(
-                "duckiebot-fifos-bridge", anonymous=False, log_level=rospy.ERROR, disable_signals=True
-            )
+            rospy.init_node("duckiebot-fifos-bridge", log_level=rospy.DEBUG, disable_rosout=False)
         except rospy.RosException as e:
-            logger.error(f"Failed to init_node {e}")
+            rospy.logerror(f"Failed to init_node {e}")
             exit(1)
-        rospy.loginfo("here 3")
+
+        log_path = "/challenges/challenge-fifos-bridge-output"
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+
+        fh = logging.FileHandler(f"{log_path}/fifos-bridge-after-init_node.log")
+        fh.setLevel(logging.DEBUG)
+        # create console handler with a higher log level
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        # create formatter and add it to the handlers
+        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # fh.setFormatter(formatter)
+        # ch.setFormatter(formatter)
+        # add the handlers to the logger
+        root = logging.getLogger()
+        root.addHandler(fh)
+        root.addHandler(ch)
+
         print("we really didn't get here")
 
         try:
             rospy.on_shutdown(self.on_shutdown)
         except rospy.RosException as e:
-            logger.error(f"Failed to register on_shutdown callback {e}")
+            rospy.logerror(f"Failed to register on_shutdown callback {e}")
             exit(1)
 
-        logger.info("here 4")
+        rospy.loginfo("here 4")
 
         # self.r = rospy.Rate(100)
         msg = "ROSClient initialized."
-        logger.info(msg)
+        rospy.loginfo(msg)
 
         cmd_topic = f"/{self.vehicle}/wheels_driver_node/wheels_cmd"
         self.cmd_pub = rospy.Publisher(cmd_topic, WheelsCmdStamped, queue_size=10)
-        logger.info("wheel command publisher created")
+        rospy.loginfo("wheel command publisher created")
 
         img_topic = f"/{self.vehicle}/camera_node/image/compressed"
         self.cam_sub = rospy.Subscriber(img_topic, CompressedImage, self._cam_cb)
-        logger.info("camera subscriber created")
+        rospy.loginfo("camera subscriber created")
 
         # Setup the time synchronizer
         encoder_left_hz = rospy.get_param(f"/{self.vehicle}/left_wheel_encoder_node/publish_frequency", None)
@@ -87,23 +94,25 @@ class ROSClient:
             self.right_encoder_sub = message_filters.Subscriber(right_encoder_topic, WheelEncoderStamped)
             # sync topics
             encoder_hz = min(encoder_left_hz, encoder_right_hz)
-            logger.info(f"Encoders have frequencies: Left({encoder_left_hz}Hz), Right({encoder_right_hz}Hz)")
-            logger.info(f"Synchronizing encoders at a frequency of {encoder_hz}Hz")
+            rospy.loginfo(
+                f"Encoders have frequencies: Left({encoder_left_hz}Hz), Right({encoder_right_hz}Hz)"
+            )
+            rospy.loginfo(f"Synchronizing encoders at a frequency of {encoder_hz}Hz")
             self.ts_encoders = message_filters.ApproximateTimeSynchronizer(
                 [self.left_encoder_sub, self.right_encoder_sub], 10, 1.0 / encoder_hz
             )
             self.ts_encoders.registerCallback(self._encoder_cb)
         else:
-            logger.info("The robot does not seem to have encoders. Skipping encoders integration.")
+            rospy.loginfo("The robot does not seem to have encoders. Skipping encoders integration.")
 
         # we arbitrarily take the resolution of the left encoder since we are assuming them to be the same
         # if this parameter is not set, we default to 0
         resolution = rospy.get_param(f"/{self.vehicle}/left_wheel_encoder_node/resolution", None)
         if resolution is not None:
-            logger.info(f"Got resolution of {resolution} from encoder")
+            rospy.loginfo(f"Got resolution of {resolution} from encoder")
             self.resolution_rad = np.pi * 2 / resolution
         else:
-            logger.info("The robot does not seem to have encoders. Skipping encoders integration.")
+            rospy.loginfo("The robot does not seem to have encoders. Skipping encoders integration.")
             self.resolution_rad = 0
         self.left_encoder_ticks = 0
         self.right_encoder_ticks = 0
@@ -114,7 +123,7 @@ class ROSClient:
     def on_shutdown(self):
         self.shutdown = True
         msg = "ROSClient on_shutdown sends 0,0 command."
-        logger.info(msg)
+        rospy.loginfo(msg)
         commands = {"motor_right": 0.0, "motor_left": 0.0}
         self.send_commands(commands)
 
@@ -126,7 +135,7 @@ class ROSClient:
         # ---
         if self.nreceived_encoders == 0:
             msg = "ROSClient received first data from the encoders"
-            logger.info(msg)
+            rospy.loginfo(msg)
         # ---
         self.nreceived_encoders += 1
 
@@ -141,7 +150,7 @@ class ROSClient:
         self.initialized = True
         if self.nreceived_images == 0:
             msg = "ROSClient received first camera image."
-            logger.info(msg)
+            rospy.loginfo(msg)
         self.nreceived_images += 1
 
     def send_commands(self, cmds):
@@ -155,7 +164,7 @@ class ROSClient:
         cmd_msg.vel_left = cmds["motor_left"]
         if self.nsent_commands == 0:
             msg = "ROSClient publishing first commands."
-            logger.info(msg)
+            rospy.loginfo(msg)
 
         self.cmd_pub.publish(cmd_msg)
         self.nsent_commands += 1
