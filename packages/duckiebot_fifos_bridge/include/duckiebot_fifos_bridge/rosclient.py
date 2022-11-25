@@ -6,7 +6,6 @@ import numpy as np
 
 import rospy
 from duckietown_msgs.msg import LEDPattern, WheelEncoderStamped, WheelsCmdStamped
-from duckietown_msgs.srv import SetCustomLEDPattern
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import ColorRGBA
 
@@ -73,6 +72,10 @@ class ROSClient:
         self.cmd_pub = rospy.Publisher(cmd_topic, WheelsCmdStamped, queue_size=10)
         rospy.loginfo("wheel command publisher created")
 
+        led_topic = f"/{self.vehicle}/led_emitter_node/led_pattern"
+        self.led_pub = rospy.Publisher(led_topic, LEDPattern, queue_size=10)
+        rospy.loginfo("led publisher creaated")
+
         img_topic = f"/{self.vehicle}/camera_node/image/compressed"
         self.cam_sub = rospy.Subscriber(img_topic, CompressedImage, self._cam_cb)
         rospy.loginfo("camera subscriber created")
@@ -112,9 +115,6 @@ class ROSClient:
             self.resolution_rad = 0
         self.left_encoder_ticks = 0
         self.right_encoder_ticks = 0
-
-        led_set_pattern_topic = f"/{self.vehicle}/led_emitter_node/set_custom_pattern"
-        self.change_led_pattern = rospy.ServiceProxy(led_set_pattern_topic, SetCustomLEDPattern)
 
     def on_shutdown(self):
         self.shutdown = True
@@ -167,7 +167,7 @@ class ROSClient:
 
     def change_leds(self, data):
         """
-        Calls the change LED service
+        Publishes the change in LEDs
         """
 
         def createRGBAmsg(a):
@@ -178,21 +178,12 @@ class ROSClient:
             msg.a = 1
             return msg
 
-        led_pattern = LEDPattern()
-        time = rospy.get_rostime()
-        led_pattern.header.stamp.secs = time.secs
-        led_pattern.header.stamp.nsecs = time.nsecs
+        led_pattern_msg = LEDPattern()
         c = createRGBAmsg(data["center"])
         fl = createRGBAmsg(data["front_left"])
         fr = createRGBAmsg(data["front_right"])
         bl = createRGBAmsg(data["back_left"])
         br = createRGBAmsg(data["back_right"])
-        led_pattern.rgb_vals = [c, fl, fr, bl, br]
-        led_pattern.color_mask = [1, 1, 1, 1, 1]
-        led_pattern.frequency = 1.0
-        led_pattern.frequency_mask = [1, 1, 1, 1, 1]
-        try:
-            resp = self.change_led_pattern(led_pattern)
-            # print(resp)
-        except Exception as e:
-            print(e)
+        led_pattern_msg.rgb_vals = [fl, bl, c, br, fr]
+
+        self.led_pub(led_pattern_msg)

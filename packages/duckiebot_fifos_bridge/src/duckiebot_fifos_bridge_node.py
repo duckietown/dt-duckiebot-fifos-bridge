@@ -108,7 +108,7 @@ class DuckiebotBridge:
                 "back_left": bl,
                 "back_right": br,
             }
-            # self.client.change_leds(led_commands)
+            self.client.change_leds(led_commands)
 
             if nimages_received == 0:
                 logger.info("DuckiebotBridge published the first commands.")
