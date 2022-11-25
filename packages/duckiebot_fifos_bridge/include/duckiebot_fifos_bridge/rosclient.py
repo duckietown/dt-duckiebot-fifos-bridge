@@ -186,4 +186,4 @@ class ROSClient:
         br = createRGBAmsg(data["back_right"])
         led_pattern_msg.rgb_vals = [fl, bl, c, br, fr]
 
-        self.led_pub(led_pattern_msg)
+        self.led_pub.publish(led_pattern_msg)
