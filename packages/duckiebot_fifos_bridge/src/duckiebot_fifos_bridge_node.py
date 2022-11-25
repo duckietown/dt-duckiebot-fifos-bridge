@@ -96,11 +96,11 @@ class DuckiebotBridge:
             pwm_commands = {"motor_right": rw, "motor_left": lw}
             self.client.send_commands(pwm_commands)
             leds = r.data.LEDS
-            c = RGBfloat2int(leds.center)
-            fl = RGBfloat2int(leds.front_left)
-            fr = RGBfloat2int(leds.front_right)
-            bl = RGBfloat2int(leds.back_left)
-            br = RGBfloat2int(leds.back_right)
+            c = leds.center
+            fl = leds.front_left
+            fr = leds.front_right
+            bl = leds.back_left
+            br = leds.back_right
             led_commands = {
                 "center": c,
                 "front_left": fl,

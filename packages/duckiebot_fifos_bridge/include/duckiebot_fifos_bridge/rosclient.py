@@ -9,6 +9,7 @@ from duckietown_msgs.msg import LEDPattern, WheelEncoderStamped, WheelsCmdStampe
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import ColorRGBA
 
+from aido_schemas import RGB
 
 __all__ = ["ROSClient"]
 
@@ -170,11 +171,11 @@ class ROSClient:
         Publishes the change in LEDs
         """
 
-        def createRGBAmsg(a):
+        def createRGBAmsg(from_fifo: RGB):
             msg = ColorRGBA()
-            msg.r = a[0]
-            msg.g = a[1]
-            msg.b = a[2]
+            msg.r = from_fifo.r
+            msg.g = from_fifo.g
+            msg.b = from_fifo.b
             msg.a = 1
             return msg
 
