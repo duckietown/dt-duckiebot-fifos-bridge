@@ -72,7 +72,7 @@ class ROSClient:
         self.cmd_pub = rospy.Publisher(cmd_topic, WheelsCmdStamped, queue_size=10)
         rospy.loginfo("wheel command publisher created")
 
-        led_topic = f"/{self.vehicle}/led_emitter_node/led_pattern"
+        led_topic = f"/{self.vehicle}/led_driver_node/led_pattern"
         self.led_pub = rospy.Publisher(led_topic, LEDPattern, queue_size=10)
         rospy.loginfo("led publisher creaated")
 
