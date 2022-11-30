@@ -67,28 +67,29 @@ class DuckiebotBridge:
                     continue
 
             current_data_timestamp = max(self.client.image_data_timestamp, self.client.encoder_stamp)
-            if current_data_timestamp == t_last_transmitted:
-                time.sleep(0.005)
-                continue
-            t_last_transmitted = current_data_timestamp
+            if current_data_timestamp != t_last_transmitted:
+                # time.sleep(0.005)
+                # continue
+                t_last_transmitted = current_data_timestamp
 
-            jpg_data = self.client.image_data
-            camera = JPGImageWithTimestamp(jpg_data, timestamp=self.client.image_data_timestamp)
-            resolution_rad: float = float(np.pi * 2 / 135)  # FIXME: hardcoded
+                jpg_data = self.client.image_data
+                camera = JPGImageWithTimestamp(jpg_data, timestamp=self.client.image_data_timestamp)
+                resolution_rad: float = float(np.pi * 2 / 135)  # FIXME: hardcoded
 
-            axis_left_rad: float = float(self.client.left_encoder_ticks * self.client.resolution_rad)
-            axis_right_rad: float = float(self.client.right_encoder_ticks * self.client.resolution_rad)
-            odometry = DB20OdometryWithTimestamp(
-                axis_left_rad=axis_left_rad,
-                axis_right_rad=axis_right_rad,
-                resolution_rad=resolution_rad,
-                timestamp=self.client.encoder_stamp,
-            )
-            obs = DB20ObservationsWithTimestamp(camera, odometry)
-            if nimages_received == 0:
-                logger.info("DuckiebotBridge got the first image from ROS.")
+                axis_left_rad: float = float(self.client.left_encoder_ticks * self.client.resolution_rad)
+                axis_right_rad: float = float(self.client.right_encoder_ticks * self.client.resolution_rad)
+                odometry = DB20OdometryWithTimestamp(
+                    axis_left_rad=axis_left_rad,
+                    axis_right_rad=axis_right_rad,
+                    resolution_rad=resolution_rad,
+                    timestamp=self.client.encoder_stamp,
+                )
+                obs = DB20ObservationsWithTimestamp(camera, odometry)
+                if nimages_received == 0:
+                    logger.info("DuckiebotBridge got the first image from ROS.")
 
-            self.ci.write_topic_and_expect_zero("observations", obs)
+                self.ci.write_topic_and_expect_zero("observations", obs)
+
             gc = GetCommands(at_time=time.time())
             r: MsgReceived = self.ci.write_topic_and_expect("get_commands", gc, expect="commands")
             wheels = r.data.wheels
@@ -115,6 +116,8 @@ class DuckiebotBridge:
 
             nimages_received += 1
             t_last_received = time.time()
+
+            time.sleep(0.03)
 
 
 def RGBfloat2int(from_fifo: RGB) -> List[int]:
