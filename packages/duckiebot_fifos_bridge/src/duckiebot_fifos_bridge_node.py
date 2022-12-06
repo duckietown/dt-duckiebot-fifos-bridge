@@ -116,7 +116,7 @@ class DuckiebotBridge:
 
             nimages_received += 1
             t_last_received = time.time()
-
+            # TODO frequency should be read in as a parameter
             time.sleep(0.03)
 
 
